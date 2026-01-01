@@ -413,6 +413,21 @@ bool fetchMonitors() {
         mon.valid = true;
         monitorCount++;
       }
+
+      // Sort: non-"up" monitors first (problems at top!)
+      for (int i = 0; i < monitorCount - 1; i++) {
+        for (int j = i + 1; j < monitorCount; j++) {
+          bool iUp = (monitors[i].status == "up");
+          bool jUp = (monitors[j].status == "up");
+          // If i is up but j is not, swap them (problems go to top)
+          if (iUp && !jUp) {
+            Monitor temp = monitors[i];
+            monitors[i] = monitors[j];
+            monitors[j] = temp;
+          }
+        }
+      }
+
       Serial.printf("Got %d monitors\n", monitorCount);
       http.end();
       isRefreshing = false;
