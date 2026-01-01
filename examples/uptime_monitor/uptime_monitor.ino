@@ -92,6 +92,12 @@ const unsigned long DETAIL_TIMEOUT = 10000; // 10 seconds
 uint16_t *fb = nullptr;
 
 // ============================================================================
+// WiFi & HTTP Clients (Global to prevent memory leaks)
+// ============================================================================
+WiFiClientSecure wifiClient;
+HTTPClient httpClient;
+
+// ============================================================================
 // Font 6x8
 // ============================================================================
 const uint8_t font6x8[] = {
@@ -347,6 +353,8 @@ void drawSplash(const char *msg) {
 
 void connectWiFi() {
   drawSplash("Connecting...");
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true); // Enable auto-reconnect
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   int tries = 0;
   while (WiFi.status() != WL_CONNECTED && tries < 40) {
@@ -355,6 +363,7 @@ void connectWiFi() {
   }
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("WiFi Connected!");
+    Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
     drawSplash("Connected!");
     delay(500);
   } else {
@@ -371,18 +380,27 @@ bool fetchMonitors() {
   isRefreshing = true;
   Serial.println("Fetching monitors...");
 
-  WiFiClientSecure client;
-  client.setInsecure();
+  // Ensure WiFi is connected
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi not connected, aborting fetch");
+    isRefreshing = false;
+    return false;
+  }
 
-  HTTPClient http;
-  http.begin(client, "https://uptime.betterstack.com/api/v2/monitors");
-  http.addHeader("Authorization", String("Bearer ") + BETTERSTACK_TOKEN);
+  // Use global client (no recreation = no memory leak)
+  wifiClient.setInsecure();
 
-  int code = http.GET();
+  httpClient.begin(wifiClient, "https://uptime.betterstack.com/api/v2/monitors");
+  httpClient.addHeader("Authorization", String("Bearer ") + BETTERSTACK_TOKEN);
+  httpClient.setTimeout(10000); // 10 second timeout
+
+  int code = httpClient.GET();
   Serial.printf("HTTP: %d\n", code);
 
+  bool success = false;
+
   if (code == 200) {
-    String payload = http.getString();
+    String payload = httpClient.getString();
     JsonDocument doc;
     if (deserializeJson(doc, payload) == DeserializationError::Ok) {
       JsonArray data = doc["data"];
@@ -429,14 +447,18 @@ bool fetchMonitors() {
       }
 
       Serial.printf("Got %d monitors\n", monitorCount);
-      http.end();
-      isRefreshing = false;
-      return true;
+      success = true;
+    } else {
+      Serial.println("JSON parse error");
     }
+  } else {
+    Serial.printf("HTTP error: %d\n", code);
   }
-  http.end();
+
+  // Always cleanup HTTP connection
+  httpClient.end();
   isRefreshing = false;
-  return false;
+  return success;
 }
 
 // ============================================================================
@@ -820,8 +842,8 @@ void loop() {
   // Detail view: animate progress bar + auto-return
   if (selectedMonitor >= 0) {
     static unsigned long lastDetailRedraw = 0;
-    // Redraw every 100ms to animate the progress bar
-    if (millis() - lastDetailRedraw > 100) {
+    // Redraw every 500ms to animate the progress bar (reduced from 100ms to save resources)
+    if (millis() - lastDetailRedraw > 500) {
       drawUI();
       lastDetailRedraw = millis();
     }
@@ -835,11 +857,22 @@ void loop() {
 
   // Auto refresh (only in list view)
   if (selectedMonitor < 0 && millis() - lastUpdate > UPDATE_INTERVAL) {
-    if (WiFi.status() != WL_CONNECTED)
+    // Check WiFi and reconnect if needed
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("WiFi disconnected, reconnecting...");
+      WiFi.disconnect();
+      delay(100);
       connectWiFi();
-    if (WiFi.status() == WL_CONNECTED)
-      fetchMonitors();
-    drawUI();
+    }
+
+    // Only fetch if WiFi is connected
+    if (WiFi.status() == WL_CONNECTED) {
+      if (fetchMonitors()) {
+        drawUI(); // Only redraw if fetch succeeded
+      } else {
+        Serial.println("Fetch failed, will retry next interval");
+      }
+    }
     lastUpdate = millis();
   }
 
@@ -848,6 +881,14 @@ void loop() {
   if (millis() - lastTimeUpdate > 10000 && selectedMonitor < 0) {
     drawUI();
     lastTimeUpdate = millis();
+  }
+
+  // Periodic heap monitoring (every 60 seconds)
+  static unsigned long lastHeapCheck = 0;
+  if (millis() - lastHeapCheck > 60000) {
+    Serial.printf("Free heap: %d bytes, Min free heap: %d bytes\n",
+                  ESP.getFreeHeap(), ESP.getMinFreeHeap());
+    lastHeapCheck = millis();
   }
 
   delay(20);
