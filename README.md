@@ -93,3 +93,6 @@ Please enter the upload mode manually.
 * [lvgl 8.3.0](https://github.com/lvgl/lvgl)
 * [XPowersLib](https://github.com/lewisxhe/XPowersLib)
 
+
+
+/Users/louistrue/Library/Python/3.9/bin/pio run -t upload
