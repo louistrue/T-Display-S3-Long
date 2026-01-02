@@ -54,6 +54,11 @@ img
 .vscode
 .pio
 build
-# Credentials/secrets
+# Credentials/secrets - NEVER commit real credentials!
 config.h
 **/config.h
+
+# Custom pins_config.h files with credentials (keep *.example versions)
+examples/spotify_player/pins_config.h
+examples/uptime_monitor/pins_config.h
+examples/dual_mode_display/pins_config.h
