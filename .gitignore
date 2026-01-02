@@ -54,3 +54,5 @@ img
 .vscode
 .pio
 build
+
+*config.h
