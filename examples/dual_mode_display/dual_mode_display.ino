@@ -334,14 +334,6 @@ void drawModeIndicator() {
   fbDrawText(50, 26, "swipe to switch", C_HEADER, 1);
 }
 
-// The rest of the implementation continues in the next message due to length...
-// This file is getting very long. Should I:
-// 1. Continue with the full implementation in multiple parts
-// 2. Create a more modular structure with separate mode files
-// 3. Use a simplified version that's easier to manage
-
-Let me continue with a complete but well-organized single file:
-
 // ============================================================================
 // Touch Functions
 // ============================================================================
