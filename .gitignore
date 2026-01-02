@@ -54,3 +54,6 @@ img
 .vscode
 .pio
 build
+# Credentials/secrets
+config.h
+**/config.h
