@@ -1,0 +1,5 @@
+# Ignore config files with sensitive credentials
+config.h
+
+# Ignore temporary authentication helper (users should use .example)
+get_refresh_token.ino

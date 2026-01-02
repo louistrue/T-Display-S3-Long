@@ -1,0 +1,45 @@
+/**
+ * Configuration file for Spotify Now Playing Display
+ *
+ * SETUP INSTRUCTIONS:
+ * 1. Copy this file to config.h
+ * 2. Fill in your WiFi credentials
+ * 3. Create a Spotify app at https://developer.spotify.com/dashboard
+ * 4. Copy your Client ID and Client Secret
+ * 5. Run the initial auth sketch to get your Refresh Token
+ * 6. Paste the refresh token below
+ */
+
+#pragma once
+
+// ============================================================================
+// WiFi Configuration
+// ============================================================================
+#define WIFI_SSID "your-wifi-ssid"
+#define WIFI_PASSWORD "your-wifi-password"
+
+// ============================================================================
+// Spotify API Configuration
+// ============================================================================
+// Get these from https://developer.spotify.com/dashboard
+#define SPOTIFY_CLIENT_ID "your_client_id_here"
+#define SPOTIFY_CLIENT_SECRET "your_client_secret_here"
+
+// Get this by running the initial authentication
+// See README for instructions
+#define SPOTIFY_REFRESH_TOKEN "your_refresh_token_here"
+
+// ============================================================================
+// Display Configuration
+// ============================================================================
+// Update interval (milliseconds) - how often to poll Spotify API
+#define API_POLL_INTERVAL 3000  // 3 seconds
+
+// Progress bar update interval (milliseconds) - for smooth animation
+#define PROGRESS_UPDATE_INTERVAL 100  // 10 FPS
+
+// Text scroll speed (milliseconds per pixel)
+#define TEXT_SCROLL_DELAY 50
+
+// Album art cache (don't re-download if same track)
+#define CACHE_ALBUM_ART true

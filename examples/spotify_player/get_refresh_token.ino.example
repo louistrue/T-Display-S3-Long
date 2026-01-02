@@ -1,0 +1,173 @@
+/**
+ * Spotify Refresh Token Helper
+ *
+ * This sketch helps you get your Spotify refresh token for the main player app.
+ *
+ * INSTRUCTIONS:
+ * 1. Create a Spotify app at https://developer.spotify.com/dashboard
+ * 2. Add redirect URI: http://localhost:8888/callback
+ * 3. Fill in your credentials below
+ * 4. Upload this sketch
+ * 5. Open Serial Monitor (115200 baud)
+ * 6. Follow the authorization URL
+ * 7. After authorizing, you'll be redirected to localhost (won't load)
+ * 8. Copy the ENTIRE URL from your browser address bar
+ * 9. Paste it into the Serial Monitor
+ * 10. Your refresh token will be printed - save it for config.h!
+ */
+
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <base64.h>
+
+// ============================================================================
+// CONFIGURATION - Fill these in!
+// ============================================================================
+#define WIFI_SSID "your-wifi-ssid"
+#define WIFI_PASSWORD "your-wifi-password"
+
+#define SPOTIFY_CLIENT_ID "your_client_id_here"
+#define SPOTIFY_CLIENT_SECRET "your_client_secret_here"
+
+// Scopes needed for the player
+// Premium required for playback control
+const char* SCOPES = "user-read-playback-state user-read-currently-playing user-modify-playback-state";
+
+// ============================================================================
+// Don't change below this line
+// ============================================================================
+WiFiClientSecure wifiClient;
+HTTPClient httpClient;
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.println("\n\n==============================================");
+  Serial.println("Spotify Refresh Token Helper");
+  Serial.println("==============================================\n");
+
+  // Connect WiFi
+  Serial.println("Connecting to WiFi...");
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nWiFi connected!");
+  Serial.println();
+
+  // Generate authorization URL
+  String authUrl = "https://accounts.spotify.com/authorize?";
+  authUrl += "client_id=" + String(SPOTIFY_CLIENT_ID);
+  authUrl += "&response_type=code";
+  authUrl += "&redirect_uri=http://localhost:8888/callback";
+  authUrl += "&scope=" + String(SCOPES);
+
+  Serial.println("==============================================");
+  Serial.println("STEP 1: Authorize the app");
+  Serial.println("==============================================");
+  Serial.println("Copy this URL and open it in your browser:");
+  Serial.println();
+  Serial.println(authUrl);
+  Serial.println();
+  Serial.println("After authorizing, you'll be redirected to:");
+  Serial.println("http://localhost:8888/callback?code=...");
+  Serial.println();
+  Serial.println("The page won't load (that's normal!)");
+  Serial.println();
+  Serial.println("==============================================");
+  Serial.println("STEP 2: Paste the redirect URL");
+  Serial.println("==============================================");
+  Serial.println("Copy the ENTIRE URL from your browser and");
+  Serial.println("paste it into this Serial Monitor:");
+  Serial.println();
+}
+
+void loop() {
+  if (Serial.available()) {
+    String input = Serial.readStringUntil('\n');
+    input.trim();
+
+    if (input.length() == 0) return;
+
+    Serial.println("\nReceived URL: " + input);
+
+    // Extract code from URL
+    int codeIdx = input.indexOf("code=");
+    if (codeIdx == -1) {
+      Serial.println("ERROR: No 'code=' found in URL");
+      Serial.println("Please paste the complete redirect URL");
+      return;
+    }
+
+    String code = input.substring(codeIdx + 5);
+    // Remove anything after & or # if present
+    int ampIdx = code.indexOf('&');
+    if (ampIdx > 0) code = code.substring(0, ampIdx);
+    int hashIdx = code.indexOf('#');
+    if (hashIdx > 0) code = code.substring(0, hashIdx);
+
+    Serial.println("Extracted code: " + code);
+    Serial.println("\nExchanging code for tokens...");
+
+    // Exchange code for tokens
+    wifiClient.setInsecure();
+    httpClient.begin(wifiClient, "https://accounts.spotify.com/api/token");
+    httpClient.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    String auth = String(SPOTIFY_CLIENT_ID) + ":" + String(SPOTIFY_CLIENT_SECRET);
+    String authB64 = base64::encode(auth);
+    httpClient.addHeader("Authorization", "Basic " + authB64);
+
+    String postData = "grant_type=authorization_code";
+    postData += "&code=" + code;
+    postData += "&redirect_uri=http://localhost:8888/callback";
+
+    int httpCode = httpClient.POST(postData);
+
+    Serial.printf("HTTP Response: %d\n", httpCode);
+
+    if (httpCode == 200) {
+      String payload = httpClient.getString();
+      JsonDocument doc;
+
+      if (deserializeJson(doc, payload) == DeserializationError::Ok) {
+        String refreshToken = doc["refresh_token"].as<String>();
+        String accessToken = doc["access_token"].as<String>();
+        int expiresIn = doc["expires_in"].as<int>();
+
+        Serial.println("\n==============================================");
+        Serial.println("SUCCESS! Your tokens:");
+        Serial.println("==============================================");
+        Serial.println("\nREFRESH TOKEN (save this!):");
+        Serial.println(refreshToken);
+        Serial.println("\nAccess token (expires in " + String(expiresIn) + " seconds):");
+        Serial.println(accessToken);
+        Serial.println("\n==============================================");
+        Serial.println("NEXT STEPS:");
+        Serial.println("==============================================");
+        Serial.println("1. Copy the REFRESH TOKEN above");
+        Serial.println("2. Paste it into config.h as SPOTIFY_REFRESH_TOKEN");
+        Serial.println("3. Upload the main spotify_player sketch");
+        Serial.println("4. Enjoy your Spotify Now Playing display!");
+        Serial.println("==============================================\n");
+      } else {
+        Serial.println("ERROR: Failed to parse JSON response");
+        Serial.println(payload);
+      }
+    } else {
+      Serial.println("ERROR: Failed to get tokens");
+      Serial.println("Response: " + httpClient.getString());
+    }
+
+    httpClient.end();
+  }
+
+  delay(100);
+}
