@@ -1,0 +1,48 @@
+/**
+ * Configuration file for Dual Mode Display
+ * Switches between Uptime Monitor and Spotify Now Playing
+ *
+ * SETUP INSTRUCTIONS:
+ * 1. Copy this file to config.h
+ * 2. Fill in all credentials below
+ */
+
+#pragma once
+
+// ============================================================================
+// WiFi Configuration (shared by both modes)
+// ============================================================================
+#define WIFI_SSID "your-wifi-ssid"
+#define WIFI_PASSWORD "your-wifi-password"
+
+// ============================================================================
+// Uptime Monitor Configuration
+// ============================================================================
+// Get your API token from https://betterstack.com/uptime
+#define BETTERSTACK_TOKEN "your_betterstack_api_token_here"
+
+// ============================================================================
+// Spotify Configuration
+// ============================================================================
+// Get these from https://developer.spotify.com/dashboard
+#define SPOTIFY_CLIENT_ID "your_client_id_here"
+#define SPOTIFY_CLIENT_SECRET "your_client_secret_here"
+
+// Get this by running the get_refresh_token helper
+// (See spotify_player example for instructions)
+#define SPOTIFY_REFRESH_TOKEN "your_refresh_token_here"
+
+// ============================================================================
+// Display Configuration
+// ============================================================================
+// Update intervals
+#define UPTIME_UPDATE_INTERVAL 60000      // 60 seconds
+#define SPOTIFY_API_POLL_INTERVAL 3000    // 3 seconds
+#define SPOTIFY_PROGRESS_UPDATE 100       // 100ms (10 FPS)
+
+// Gesture settings
+#define SWIPE_THRESHOLD 80                // Minimum pixels to trigger swipe
+#define SWIPE_ZONE_HEIGHT 80              // Top area for swipe gesture
+
+// Cache settings
+#define CACHE_ALBUM_ART true
