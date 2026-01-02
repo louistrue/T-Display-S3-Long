@@ -54,7 +54,7 @@ Make sure you have ESP32 board support installed:
    - App Description: `Personal Spotify player for ESP32`
 5. Click **Create**
 6. Click **Edit Settings**
-7. Add Redirect URI: `http://localhost:8888/callback`
+7. Add Redirect URI: `http://127.0.0.1:8888/callback`
 8. Click **Save**
 9. Copy your **Client ID** and **Client Secret**
 
@@ -67,7 +67,7 @@ Make sure you have ESP32 board support installed:
 5. Copy the authorization URL from Serial Monitor
 6. Paste it into your web browser
 7. Log in and authorize the app
-8. After authorizing, you'll be redirected to `http://localhost:8888/callback?code=...`
+8. After authorizing, you'll be redirected to `http://127.0.0.1:8888/callback?code=...`
 9. **The page won't load - that's normal!**
 10. Copy the **entire URL** from your browser's address bar
 11. Paste it into the Serial Monitor
