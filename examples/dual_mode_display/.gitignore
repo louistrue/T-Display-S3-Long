@@ -1,2 +1,3 @@
 # Ignore config files with sensitive credentials
 config.h
+pins_config.h
